@@ -65,6 +65,9 @@ static int g_overlay_hooked;
 static int g_collection_hooked;
 static int g_sb_hooked;
 
+extern void cc18_pages_attach(id overlay_view);
+extern void cc18_pages_layout(id overlay_view);
+
 static IMP orig_container_layout;
 static IMP orig_round_layout;
 static IMP orig_overlay_viewdidload;
@@ -366,14 +369,18 @@ static void overlay_layout(id self, SEL _cmd)
 {
     if (orig_overlay_layout)
         ((void (*)(id, SEL))orig_overlay_layout)(self, _cmd);
-    style_tree(msg0(self, "view"), 0);
+    id view = msg0(self, "view");
+    style_tree(view, 0);
+    cc18_pages_layout(view);
 }
 
 static void overlay_viewdidload(id self, SEL _cmd)
 {
     if (orig_overlay_viewdidload)
         ((void (*)(id, SEL))orig_overlay_viewdidload)(self, _cmd);
-    style_tree(msg0(self, "view"), 0);
+    id view = msg0(self, "view");
+    style_tree(view, 0);
+    cc18_pages_attach(view);
 }
 
 static void collection_appear(id self, SEL _cmd, BOOL animated)
@@ -434,10 +441,14 @@ static void did_present(id self, SEL _cmd)
         ((void (*)(id, SEL))orig_did_present)(self, _cmd);
     cc_install();
     id vc = msg0(self, "viewController");
-    if (vc)
-        style_tree(msg0(vc, "view"), 0);
-    else
+    if (vc) {
+        id view = msg0(vc, "view");
+        style_tree(view, 0);
+        cc18_pages_attach(view);
+        cc18_pages_layout(view);
+    } else {
         style_all_windows();
+    }
 }
 
 static void install_sb_hook(void)
