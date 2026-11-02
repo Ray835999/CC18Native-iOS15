@@ -43,6 +43,8 @@ static id g_conn_status[7];
 static id g_dots[3];
 static id g_overlay_pan;
 static id g_pager_pan;
+static id g_edge;
+static id g_edge_pan;
 static int g_page;
 
 /* ---------- message helpers ---------- */
@@ -541,6 +543,8 @@ static void show_page(int page)
     g_page = page;
     if (g_overlay_pan)
         msg_void_bool(g_overlay_pan, "setEnabled:", page == 0);
+    if (g_edge_pan)
+        msg_void_bool(g_edge_pan, "setEnabled:", page == 0);
     if (g_pager_pan)
         msg_void_bool(g_pager_pan, "setEnabled:", page != 0);
     if (page == 0) {
@@ -666,6 +670,9 @@ static void layout_pages(void)
     msg_void_rect(g_pager, "setFrame:", b);
     msg_void_rect(g_player_page, "setFrame:", b);
     msg_void_rect(g_conn_page, "setFrame:", b);
+    if (g_edge)
+        msg_void_rect(g_edge, "setFrame:",
+                      (CGRect){{b.size.width - 24, 0}, {24, b.size.height}});
     double x = b.size.width - 18;
     double y = b.size.height / 2.0 - 30;
     for (int i = 0; i < 3; i++) {
@@ -710,6 +717,14 @@ void cc18_pages_attach(id overlay_view)
         set_radius(g_dots[i], 4);
         if (g_dots[i])
             msg_void_id(g_pager, "addSubview:", g_dots[i]);
+    }
+
+    /* A narrow right-edge fallback: if the system CC's scroll view swallows
+     * the overlay's pan, a swipe from the right edge still opens the pages. */
+    g_edge = new_view((CGRect){{b.size.width - 24, 0}, {24, b.size.height}}, 0);
+    if (g_edge) {
+        msg_void_id(overlay_view, "addSubview:", g_edge);
+        g_edge_pan = add_pan(g_edge);
     }
 
     msg_void_id(overlay_view, "addSubview:", g_pager);
