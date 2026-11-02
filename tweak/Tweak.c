@@ -288,18 +288,24 @@ static void style_material_children(id view, double radius, int depth)
     }
 }
 
-static double capsule_radius(id view, double fallback)
+static double module_radius(id view, double fallback)
 {
     CGRect b = msg_bounds(view);
     double m = b.size.width < b.size.height ? b.size.width : b.size.height;
-    return m > 1.0 ? m / 2.0 : fallback;
+    if (m <= 1.0)
+        return fallback;
+    /* Large 2x2 tiles are rounded squares, not circles.  Small 1x1 buttons
+     * stay circular; elongated 2x1/1x2 tiles become capsules. */
+    if (m >= 110.0)
+        return 28.0;
+    return m / 2.0;
 }
 
 static void style_container(id view)
 {
     if (!view)
         return;
-    double radius = capsule_radius(view, 26.0);
+    double radius = module_radius(view, 26.0);
     set_layer_style(view, radius, 0);
     id inner = has_method(view, "containerView") ? msg0(view, "containerView") : 0;
     if (inner)
@@ -317,7 +323,7 @@ static void style_round(id view)
 {
     if (!view)
         return;
-    double radius = capsule_radius(view, 22.0);
+    double radius = module_radius(view, 22.0);
     set_layer_style(view, radius, 0);
 
     const char *props[] = {
