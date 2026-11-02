@@ -285,31 +285,37 @@ static void style_material_children(id view, double radius, int depth)
     }
 }
 
+static double capsule_radius(id view, double fallback)
+{
+    CGRect b = msg_bounds(view);
+    double m = b.size.width < b.size.height ? b.size.width : b.size.height;
+    return m > 1.0 ? m / 2.0 : fallback;
+}
+
 static void style_container(id view)
 {
     if (!view)
         return;
-    set_layer_style(view, 26.0, 2.0);
+    double radius = capsule_radius(view, 26.0);
+    set_layer_style(view, radius, 0);
     id inner = has_method(view, "containerView") ? msg0(view, "containerView") : 0;
     if (inner)
-        set_layer_style(inner, 26.0, 0);
+        set_layer_style(inner, radius, 0);
     id ca = has_method(view, "caAnimationContainerView") ? msg0(view, "caAnimationContainerView") : 0;
     if (ca)
-        set_layer_style(ca, 26.0, 0);
+        set_layer_style(ca, radius, 0);
     id c2 = has_method(view, "c2AnimationContainerView") ? msg0(view, "c2AnimationContainerView") : 0;
     if (c2)
-        set_layer_style(c2, 26.0, 0);
-    style_material_children(view, 26.0, 0);
-    ensure_border(view, 26.0);
+        set_layer_style(c2, radius, 0);
+    style_material_children(view, radius, 0);
 }
 
 static void style_round(id view)
 {
     if (!view)
         return;
-    CGRect b = msg_bounds(view);
-    double radius = b.size.height > 0 ? b.size.height / 2.0 : 22.0;
-    set_layer_style(view, radius, 2.0);
+    double radius = capsule_radius(view, 22.0);
+    set_layer_style(view, radius, 0);
 
     const char *props[] = {
         "normalStateBackgroundView",
@@ -322,7 +328,6 @@ static void style_round(id view)
         if (bg)
             set_layer_style(bg, radius, 0);
     }
-    ensure_border(view, radius);
 }
 
 static void style_tree(id view, int depth)
