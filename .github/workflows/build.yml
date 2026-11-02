@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 env:
-  VERSION: 0.2.0
+  VERSION: 0.3.0
 
 jobs:
   build:
@@ -34,9 +34,9 @@ jobs:
             -Wl,-install_name,/var/jb/Library/MobileSubstrate/DynamicLibraries/CC18Native.dylib \
             -Wl,-undefined,dynamic_lookup"
           clang -target arm64-apple-ios15.0 $COMMON \
-            tweak/Tweak.c -o build/CC18Native_arm64.dylib
+            tweak/Tweak.c tweak/Pages.c -o build/CC18Native_arm64.dylib
           clang -target arm64e-apple-ios15.0 $COMMON \
-            tweak/Tweak.c -o build/CC18Native_arm64e.dylib
+            tweak/Tweak.c tweak/Pages.c -o build/CC18Native_arm64e.dylib
           python3 - <<'PY'
           import struct
           p = 'build/CC18Native_arm64e.dylib'
