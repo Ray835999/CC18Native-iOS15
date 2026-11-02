@@ -239,7 +239,7 @@ static id new_icon_button(CGRect frame, const char *symbol, long tag)
 }
 
 static id new_card(CGRect frame, const char *symbol, const char *title,
-                   const char *status, long tag)
+                   const char *status, long tag, id *status_out)
 {
     Class UIButton = (Class)objc_getClass("UIButton");
     id card = ((id (*)(id, SEL, long))objc_msgSend)(
@@ -264,6 +264,8 @@ static id new_card(CGRect frame, const char *symbol, const char *title,
                      status, 13, color(1, 1, 1, 0.55), 0);
     if (s)
         msg_void_id(card, "addSubview:", s);
+    if (status_out)
+        *status_out = s;
 
     add_target(card, tag);
     return card;
@@ -509,15 +511,11 @@ static void build_conn(CGRect bounds)
 
     for (int i = 0; i < 7; i++) {
         CGRect f = {{35, y}, {card_w, 64}};
-        id card = new_card(f, icons[i], titles[i], status[i], 100 + i);
+        id card = new_card(f, icons[i], titles[i], status[i], 100 + i,
+                           &g_conn_status[i]);
         if (!card)
             continue;
         msg_void_id(g_conn_page, "addSubview:", card);
-        /* status labels are the only UILabel subviews after the title */
-        id subs = msg0(card, "subviews");
-        unsigned long n = subs ? msg_long(subs, "count") : 0;
-        if (n >= 3)
-            g_conn_status[i] = msg_index(subs, "objectAtIndex:", n - 1);
         y += 72;
     }
 
