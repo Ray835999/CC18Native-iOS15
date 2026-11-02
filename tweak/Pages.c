@@ -368,6 +368,11 @@ static void build_player(CGRect bounds)
     if (next)
         msg_void_id(g_player_page, "addSubview:", next);
 
+    id close = new_icon_button(
+        (CGRect){{w - 48, 44}, {36, 36}}, "chevron.down", 4);
+    if (close)
+        msg_void_id(g_player_page, "addSubview:", close);
+
     Class MPVolumeView = (Class)objc_getClass("MPVolumeView");
     if (MPVolumeView) {
         id vol = msg_rect(msg0((id)MPVolumeView, "alloc"),
@@ -521,6 +526,11 @@ static void build_conn(CGRect bounds)
         y += 72;
     }
 
+    id close = new_icon_button(
+        (CGRect){{w - 48, 44}, {36, 36}}, "chevron.down", 4);
+    if (close)
+        msg_void_id(g_conn_page, "addSubview:", close);
+
     msg_void_bool(g_conn_page, "setHidden:", 1);
 }
 
@@ -613,6 +623,8 @@ static void handle_button(id self, SEL _cmd, id button)
         if (p)
             msg_void(p, "skipToNextItem");
         update_player();
+    } else if (tag == 4) {
+        show_page(0);
     } else if (tag == 100) {
         toggle_airplane();
         update_conn();
