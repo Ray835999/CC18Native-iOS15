@@ -1,0 +1,77 @@
+name: Build CC18Native iOS 15
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  VERSION: 0.1.0
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends clang lld llvm file curl ca-certificates
+          curl -L --fail --retry 3 -o /tmp/ldid \
+            https://github.com/ProcursusTeam/ldid/releases/download/v2.1.5-procursus7/ldid_linux_x86_64
+          chmod +x /tmp/ldid
+          clang --version | head -1
+
+      - name: Build arm64 and arm64e
+        run: |
+          mkdir -p build work/data/var/jb/Library/MobileSubstrate/DynamicLibraries
+          COMMON="-dynamiclib -nostdlib -fno-stack-protector -fuse-ld=lld \
+            -Wl,-platform_version,ios,15.0,15.0 \
+            -Wl,-install_name,/var/jb/Library/MobileSubstrate/DynamicLibraries/CC18Native.dylib \
+            -Wl,-undefined,dynamic_lookup"
+          clang -target arm64-apple-ios15.0 $COMMON \
+            tweak/Tweak.c -o build/CC18Native_arm64.dylib
+          clang -target arm64e-apple-ios15.0 $COMMON \
+            tweak/Tweak.c -o build/CC18Native_arm64e.dylib
+          python3 - <<'PY'
+          import struct
+          p = 'build/CC18Native_arm64e.dylib'
+          data = bytearray(open(p, 'rb').read())
+          struct.pack_into('<I', data, 8, 0x80000002)
+          open(p, 'wb').write(data)
+          PY
+          /tmp/ldid -S build/CC18Native_arm64.dylib
+          /tmp/ldid -S build/CC18Native_arm64e.dylib
+          python3 tools/make_fat.py build/CC18Native.dylib \
+            build/CC18Native_arm64.dylib build/CC18Native_arm64e.dylib
+          cp build/CC18Native.dylib \
+            work/data/var/jb/Library/MobileSubstrate/DynamicLibraries/CC18Native.dylib
+          cp CC18Native.plist \
+            work/data/var/jb/Library/MobileSubstrate/DynamicLibraries/CC18Native.plist
+          file build/CC18Native.dylib
+
+      - name: Pack rootless deb
+        run: |
+          mkdir -p dist work/ctrl
+          cp control work/ctrl/control
+          cp postinst work/ctrl/postinst
+          chmod 755 work/ctrl/postinst
+          python3 tools/pack_deb.py work/data work/ctrl/control \
+            "dist/CC18Native_${VERSION}_arm64.deb" "$VERSION"
+          sudo rm -rf /tmp/cc18native
+          sudo mkdir -p /tmp/cc18native/var/lib/dpkg/info /tmp/cc18native/var/lib/dpkg/updates
+          sudo touch /tmp/cc18native/var/lib/dpkg/status
+          sudo dpkg --root=/tmp/cc18native --force-architecture --unpack \
+            "dist/CC18Native_${VERSION}_arm64.deb"
+          test -f "/tmp/cc18native/var/jb/Library/MobileSubstrate/DynamicLibraries/CC18Native.dylib"
+          sha256sum dist/*.deb
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CC18Native-${{ env.VERSION }}
+          path: dist/*.deb
+          if-no-files-found: error
