@@ -1,6 +1,6 @@
 Package: com.ray.cc18native
 Name: CC18 Native (iOS 15)
-Version: 0.3.1
+Version: 0.3.2
 Architecture: iphoneos-arm64
 Description: Native iOS 15 visual pass for the iOS 18 Control Center look.
  Hooks the real iOS 15 Control Center classes instead of loading the
